@@ -19,6 +19,7 @@ gcloud run deploy pulse-api \
   --memory 512Mi --cpu 1 --concurrency 80 \
   --min-instances 0 --max-instances 5 \
   --set-env-vars "ENV=demo,GCP_PROJECT=$PROJECT,CORS_ORIGINS=[\"*\"]" \
+  --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
   --quiet
 
 BACKEND_URL="$(gcloud run services describe pulse-api --region "$REGION" --format='value(status.url)')"
