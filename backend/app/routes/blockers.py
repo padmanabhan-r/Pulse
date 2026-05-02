@@ -14,6 +14,8 @@ router = APIRouter()
 
 
 class BlockerOut(BaseModel):
+    """Blocker list item. Only unresolved blockers are returned by the list endpoint."""
+
     id: str
     summary: str
     severity: Priority
@@ -22,6 +24,7 @@ class BlockerOut(BaseModel):
 
 @router.get("/{workspace_id}", response_model=list[BlockerOut])
 async def list_blockers(workspace_id: str, user: AuthUser = CurrentUser) -> list[BlockerOut]:
+    """Return unresolved blockers for the workspace. Drives the d3 blocker graph on the dashboard."""
     if not is_member(workspace_id, user.uid):
         raise HTTPException(status_code=403, detail="not_a_member")
     docs = workspace_doc(workspace_id).collection("blockers").where("resolved", "==", False).stream()

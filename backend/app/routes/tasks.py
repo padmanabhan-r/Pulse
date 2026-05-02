@@ -16,6 +16,8 @@ router = APIRouter()
 
 
 class TaskBody(BaseModel):
+    """Manual task creation request. workspace_id scopes the write."""
+
     workspace_id: str
     title: str = Field(min_length=2, max_length=140)
     description: str | None = Field(default=None, max_length=2000)
@@ -25,6 +27,8 @@ class TaskBody(BaseModel):
 
 
 class TaskUpdateBody(BaseModel):
+    """Partial update — only supplied fields are written. None fields are excluded from the Firestore update."""
+
     title: str | None = None
     description: str | None = None
     status: TaskStatus | None = None
@@ -34,6 +38,8 @@ class TaskUpdateBody(BaseModel):
 
 
 class TaskOut(BaseModel):
+    """Lightweight task response for create/update. Full schema in models.schemas.Task."""
+
     id: str
     title: str
     status: TaskStatus
@@ -42,6 +48,7 @@ class TaskOut(BaseModel):
 
 @router.post("", response_model=TaskOut)
 async def create_task(body: TaskBody, user: AuthUser = CurrentUser) -> TaskOut:
+    """Create a manual task and write to Firestore. Source tagged 'manual' to distinguish from standup/slack."""
     if not is_member(body.workspace_id, user.uid):
         raise HTTPException(status_code=403, detail="not_a_member")
     now = datetime.now(tz=timezone.utc)
@@ -67,6 +74,7 @@ async def create_task(body: TaskBody, user: AuthUser = CurrentUser) -> TaskOut:
 async def update_task(
     workspace_id: str, task_id: str, body: TaskUpdateBody, user: AuthUser = CurrentUser
 ) -> TaskOut:
+    """Partial-update a task. Enum fields serialised to string values before Firestore write."""
     if not is_member(workspace_id, user.uid):
         raise HTTPException(status_code=403, detail="not_a_member")
     ref = workspace_doc(workspace_id).collection("tasks").document(task_id)

@@ -17,11 +17,15 @@ router = APIRouter()
 
 
 class StandupTextBody(BaseModel):
+    """Request body for text-path standup submission (vs. live WebSocket path)."""
+
     workspace_id: str
     transcript: str = Field(min_length=10, max_length=10_000)
 
 
 class StandupOut(BaseModel):
+    """Response includes full extraction result plus the Firestore IDs written in this call."""
+
     extraction: ExtractionResult
     task_ids: list[str]
     blocker_ids: list[str]
@@ -29,6 +33,7 @@ class StandupOut(BaseModel):
 
 @router.post("", response_model=StandupOut)
 async def submit_standup(body: StandupTextBody, user: AuthUser = CurrentUser) -> StandupOut:
+    """Extract tasks/blockers from transcript and persist to Firestore in a single batch write."""
     if not is_member(body.workspace_id, user.uid):
         raise HTTPException(status_code=403, detail="not_a_member")
 

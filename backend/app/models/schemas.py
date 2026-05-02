@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field
 
 
 class Priority(str, Enum):
+    """Task/blocker severity. Stored as string in Firestore; used for Kanban colouring and Slack emoji."""
+
     low = "low"
     medium = "medium"
     high = "high"
@@ -16,6 +18,8 @@ class Priority(str, Enum):
 
 
 class TaskStatus(str, Enum):
+    """Kanban column state. Transitions: todo → in_progress → done | blocked."""
+
     todo = "todo"
     in_progress = "in_progress"
     blocked = "blocked"
@@ -23,6 +27,8 @@ class TaskStatus(str, Enum):
 
 
 class Role(str, Enum):
+    """Workspace membership role. owner > admin > member for permission checks."""
+
     owner = "owner"
     admin = "admin"
     member = "member"
@@ -48,6 +54,8 @@ class ExtractedBlocker(BaseModel):
 
 
 class ExtractionResult(BaseModel):
+    """Top-level Gemini extraction output. Caps prevent runaway model output from flooding Firestore."""
+
     tasks: list[ExtractedTask] = Field(default_factory=list, max_length=20)
     blockers: list[ExtractedBlocker] = Field(default_factory=list, max_length=10)
     summary: str = Field(default="", max_length=500)
