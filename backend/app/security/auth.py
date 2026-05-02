@@ -12,6 +12,7 @@ from firebase_admin import credentials
 
 @dataclass(frozen=True, slots=True)
 class AuthUser:
+    """Decoded Firebase token fields. Immutable; passed through request lifecycle as the principal."""
     uid: str
     email: str | None
     name: str | None
@@ -28,6 +29,7 @@ def _init_firebase() -> firebase_admin.App:
 
 
 def verify_id_token(token: str) -> AuthUser:
+    """Verify Firebase ID token and return principal. Raises ValueError on any invalid/expired token."""
     _init_firebase()
     try:
         decoded = fb_auth.verify_id_token(token, check_revoked=False)

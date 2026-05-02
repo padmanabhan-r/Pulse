@@ -12,6 +12,7 @@ from app.config import get_settings
 
 @lru_cache
 def client() -> genai.Client:
+    """Return cached Gemini client. Constructed once; API key read from settings at first call."""
     settings = get_settings()
     return genai.Client(api_key=settings.gemini_api_key)
 

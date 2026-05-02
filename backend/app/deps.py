@@ -8,6 +8,7 @@ from app.security.auth import AuthUser, verify_id_token
 
 
 async def current_user(authorization: str | None = Header(default=None)) -> AuthUser:
+    """Extract and verify Firebase ID token from Authorization: Bearer <token> header."""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="missing_bearer")
     token = authorization.removeprefix("Bearer ").strip()

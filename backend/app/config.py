@@ -7,6 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """App-wide config. Env vars override defaults; Secret Manager values arrive as env on Cloud Run."""
+
     model_config = SettingsConfigDict(
         env_file=".env.local",
         env_file_encoding="utf-8",
@@ -48,4 +50,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """Return cached Settings singleton. Cache invalidated only on process restart."""
     return Settings()
