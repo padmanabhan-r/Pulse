@@ -16,10 +16,14 @@ router = APIRouter()
 
 
 class CreateWorkspaceBody(BaseModel):
+    """Workspace creation request. Creator is automatically added as owner."""
+
     name: str = Field(min_length=2, max_length=80)
 
 
 class WorkspaceOut(BaseModel):
+    """Workspace response with caller's role included for client-side permission gating."""
+
     id: str
     name: str
     role: Role
@@ -27,6 +31,7 @@ class WorkspaceOut(BaseModel):
 
 @router.post("", response_model=WorkspaceOut)
 async def create_workspace(body: CreateWorkspaceBody, user: AuthUser = CurrentUser) -> WorkspaceOut:
+    """Create workspace and seed the members subcollection with the owner entry in one operation."""
     now = datetime.now(tz=timezone.utc)
     ref = db().collection("workspaces").document()
     ref.set({"name": body.name, "owner_uid": user.uid, "created_at": now})
@@ -38,6 +43,7 @@ async def create_workspace(body: CreateWorkspaceBody, user: AuthUser = CurrentUs
 
 @router.get("/{workspace_id}", response_model=WorkspaceOut)
 async def get_workspace(workspace_id: str, user: AuthUser = CurrentUser) -> WorkspaceOut:
+    """Fetch workspace metadata. Returns 403 if caller is not a member, 404 if workspace doesn't exist."""
     snap = workspace_doc(workspace_id).get()
     if not snap.exists:
         raise HTTPException(status_code=404, detail="not_found")

@@ -22,6 +22,7 @@ log = structlog.get_logger()
 
 
 def _require_signed(body: bytes, timestamp: str | None, signature: str | None) -> None:
+    """Guard for all Slack endpoints. Raises 401 if signature missing or invalid."""
     if not timestamp or not signature:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="missing_signature")
     if not verify_signature(body=body, timestamp=timestamp, signature=signature):
@@ -49,16 +50,18 @@ async def _process_message_event(event: dict[str, Any], team_id: str) -> None:
 
 
 @router.post("/events")
-async def slack_events(
+async def slack_events(  # noqa: PLR0911
     request: Request,
     background: BackgroundTasks,
     x_slack_signature: str | None = Header(default=None),
     x_slack_request_timestamp: str | None = Header(default=None),
 ) -> dict[str, Any]:
+    """Handle Slack Events API callbacks. Acks synchronously; heavy work runs in background task."""
     body = await request.body()
     _require_signed(body, x_slack_request_timestamp, x_slack_signature)
     payload = json.loads(body or b"{}")
 
+    # Slack sends a one-time challenge during Events API subscription setup.
     if payload.get("type") == "url_verification":
         return {"challenge": payload.get("challenge", "")}
 
@@ -78,6 +81,7 @@ async def slack_commands(
     x_slack_signature: str | None = Header(default=None),
     x_slack_request_timestamp: str | None = Header(default=None),
 ) -> dict[str, Any]:
+    """Handle /pulse slash command. Ephemeral ack so only the caller sees the response."""
     body = await request.body()
     _require_signed(body, x_slack_request_timestamp, x_slack_signature)
     form = dict((await request.form()).items())

@@ -41,6 +41,7 @@ async def list_blockers(workspace_id: str, user: AuthUser = CurrentUser) -> list
 
 @router.post("/{workspace_id}/{blocker_id}/resolve")
 async def resolve_blocker(workspace_id: str, blocker_id: str, user: AuthUser = CurrentUser) -> dict[str, str]:
+    """Mark a blocker resolved and record who resolved it. Coral edge disappears from graph on next poll."""
     if not is_member(workspace_id, user.uid):
         raise HTTPException(status_code=403, detail="not_a_member")
     ref = workspace_doc(workspace_id).collection("blockers").document(blocker_id)

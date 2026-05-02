@@ -27,6 +27,16 @@ async def live_standup(
     workspace_id: str,
     token: str = Query(..., description="Firebase ID token"),
 ) -> None:
+    """
+    WebSocket handler for live voice standup.
+
+    Protocol:
+      client → {"type": "transcript_chunk", "text": "..."}  (streamed caption chunks)
+      client → {"type": "stop"}                              (signals end of speech)
+      server → {"type": "caption", "text": "..."}            (echoes chunks back for live display)
+      server → {"type": "extraction", "data": {...}}         (final Gemini extraction result)
+      server → {"type": "error", "detail": "..."}            (on extraction failure)
+    """
     try:
         user = verify_id_token(token)
     except ValueError:
