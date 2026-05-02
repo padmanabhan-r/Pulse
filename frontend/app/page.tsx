@@ -30,9 +30,6 @@ export default function Landing() {
           <Link href="#manifesto" className="text-(--color-prose-mute) hover:text-(--color-prose)">
             Manifesto
           </Link>
-          <Link href="#stack" className="text-(--color-prose-mute) hover:text-(--color-prose)">
-            Stack
-          </Link>
           <Link
             href="/workspace"
             className="inline-flex items-center gap-1.5 border border-(--color-signal) px-3 py-1.5 text-(--color-signal) hover:bg-(--color-signal-dim)"
@@ -80,35 +77,45 @@ export default function Landing() {
         aria-label="live signals"
         className="border-t border-b border-(--color-rule) bg-(--color-ink-2)/60 backdrop-blur-sm"
       >
-        <div className="flex items-center gap-6 overflow-hidden px-8 py-4 sm:px-16">
+        <div className="flex items-center gap-6 px-8 py-4 sm:px-16">
           <span className="font-mono shrink-0 text-[10px] tracking-[0.22em] text-(--color-signal) uppercase">
             ◉ live ticker
           </span>
-          <ul
-            className="font-mono flex shrink-0 animate-[ticker-scroll_60s_linear_infinite] gap-12 text-xs whitespace-nowrap motion-reduce:animate-none"
-            role="log"
-            aria-live="off"
+          <div
+            className="relative min-w-0 flex-1 overflow-hidden"
+            style={{
+              maskImage:
+                "linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%)",
+            }}
           >
-            {[
-              "09:42 › @maya › 'shipping the auth flow today, blocked on tokens'",
-              "09:44 › @ravi › 'finished payments PR, ready for review'",
-              "09:51 › @jules › 'design review at 3, need final copy'",
-              "09:55 › @san › 'blocker: staging build failing on migration'",
-              "10:02 › @kim › 'API rate limits — escalating to platform'",
-            ]
-              .concat([
+            <ul
+              className="font-mono flex w-max animate-[ticker-scroll_60s_linear_infinite] gap-12 text-xs whitespace-nowrap motion-reduce:animate-none"
+              role="log"
+              aria-live="off"
+            >
+              {[
                 "09:42 › @maya › 'shipping the auth flow today, blocked on tokens'",
                 "09:44 › @ravi › 'finished payments PR, ready for review'",
                 "09:51 › @jules › 'design review at 3, need final copy'",
                 "09:55 › @san › 'blocker: staging build failing on migration'",
                 "10:02 › @kim › 'API rate limits — escalating to platform'",
-              ])
-              .map((row, i) => (
-                <li key={i} className="text-(--color-prose-mute)">
-                  {row}
-                </li>
-              ))}
-          </ul>
+              ]
+                .concat([
+                  "09:42 › @maya › 'shipping the auth flow today, blocked on tokens'",
+                  "09:44 › @ravi › 'finished payments PR, ready for review'",
+                  "09:51 › @jules › 'design review at 3, need final copy'",
+                  "09:55 › @san › 'blocker: staging build failing on migration'",
+                  "10:02 › @kim › 'API rate limits — escalating to platform'",
+                ])
+                .map((row, i) => (
+                  <li key={i} className="text-(--color-prose-mute)">
+                    {row}
+                  </li>
+                ))}
+            </ul>
+          </div>
         </div>
       </section>
 

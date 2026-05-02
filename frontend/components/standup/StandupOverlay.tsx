@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Square, X } from "lucide-react";
 import { captureMic } from "@/lib/live-audio";
 
@@ -12,9 +12,21 @@ interface ChipDraft {
   confidence?: number;
 }
 
+export interface ExtractedTaskOut {
+  title: string;
+  priority: string;
+  confidence: number;
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
 
-export function StandupOverlay({ onClose }: { onClose: () => void }) {
+export function StandupOverlay({
+  onClose,
+  onExtracted,
+}: {
+  onClose: () => void;
+  onExtracted?: (tasks: ExtractedTaskOut[]) => void;
+}) {
   const [transcript, setTranscript] = useState("");
   const [chips, setChips] = useState<ChipDraft[]>([]);
   const [amp, setAmp] = useState(0);
@@ -59,9 +71,7 @@ export function StandupOverlay({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({ transcript }),
       });
       if (!resp.ok) throw new Error(`extract ${resp.status}`);
-      const data = (await resp.json()) as {
-        tasks: { title: string; priority: string; confidence: number }[];
-      };
+      const data = (await resp.json()) as { tasks: ExtractedTaskOut[] };
       const fresh: ChipDraft[] = data.tasks.map((t, i) => ({
         id: `T-${1100 + i}`,
         title: t.title,
@@ -70,6 +80,7 @@ export function StandupOverlay({ onClose }: { onClose: () => void }) {
         confidence: t.confidence,
       }));
       setChips(fresh.length ? fresh : chips);
+      if (data.tasks.length > 0) onExtracted?.(data.tasks);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -105,14 +116,7 @@ export function StandupOverlay({ onClose }: { onClose: () => void }) {
 
       <section className="col-span-12 flex flex-col items-center justify-center py-12 lg:col-span-7">
         <Waveform amp={amp} />
-        <p
-          aria-live="polite"
-          className="font-voice mx-auto mt-12 max-w-3xl text-3xl leading-snug text-balance md:text-5xl"
-        >
-          {transcript || (
-            <span className="text-(--color-prose-mute)">Speak. Pulse is listening.</span>
-          )}
-        </p>
+        <TranscriptPane text={transcript} />
         <button
           type="button"
           onClick={extractAndStop}
@@ -139,9 +143,9 @@ export function StandupOverlay({ onClose }: { onClose: () => void }) {
 
       <aside className="col-span-12 lg:col-span-5 lg:border-l lg:border-(--color-rule) lg:pl-6">
         <p className="font-mono text-[10px] tracking-[0.22em] text-(--color-signal) uppercase">
-          ⌥ extracted tasks
+          ⌥ extracted tasks · gemini 3 flash
         </p>
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-4 max-h-[60vh] space-y-2 overflow-y-auto pr-1">
           {chips.length === 0 && (
             <li className="font-mono text-xs text-(--color-prose-mute)">
               tasks materialise as you speak…
@@ -178,6 +182,35 @@ export function StandupOverlay({ onClose }: { onClose: () => void }) {
           })}
         </ul>
       </aside>
+    </div>
+  );
+}
+
+function TranscriptPane({ text }: { text: string }) {
+  // Show only the tail of the transcript so the overlay never overflows.
+  const TAIL_CHARS = 320;
+  const visible = useMemo(() => {
+    if (!text) return "";
+    if (text.length <= TAIL_CHARS) return text;
+    const sliced = text.slice(-TAIL_CHARS);
+    const firstSpace = sliced.indexOf(" ");
+    return "… " + (firstSpace > 0 ? sliced.slice(firstSpace + 1) : sliced);
+  }, [text]);
+
+  return (
+    <div
+      aria-live="polite"
+      className="mx-auto mt-10 flex max-h-[34vh] w-full max-w-3xl items-end overflow-hidden px-4"
+      style={{
+        maskImage: "linear-gradient(to bottom, transparent 0, black 18%, black 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, transparent 0, black 18%, black 100%)",
+      }}
+    >
+      <p className="font-voice w-full text-balance text-2xl leading-snug md:text-4xl">
+        {visible || (
+          <span className="text-(--color-prose-mute)">Speak. Pulse is listening.</span>
+        )}
+      </p>
     </div>
   );
 }

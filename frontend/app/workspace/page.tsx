@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { Ticker, type TickerEntry } from "@/components/ticker/Ticker";
-import { KanbanBoard, type Card } from "@/components/kanban/KanbanBoard";
+import { KanbanBoard, type Card, type Priority } from "@/components/kanban/KanbanBoard";
 import { BlockerGraph } from "@/components/blockers/BlockerGraph";
 import { MicOrb } from "@/components/standup/MicOrb";
-import { StandupOverlay } from "@/components/standup/StandupOverlay";
+import { StandupOverlay, type ExtractedTaskOut } from "@/components/standup/StandupOverlay";
 
 const seedTicker: TickerEntry[] = [
   { time: "09:42", user: "maya", text: "shipping auth flow today, blocked on tokens", kind: "voice" },
@@ -38,15 +38,31 @@ const seedLinks = [
   { source: "san", target: "kim", blocked: true },
 ];
 
+const VALID_PRIORITY = new Set<Priority>(["low", "medium", "high", "urgent"]);
+
 export default function WorkspaceHome() {
   const [overlay, setOverlay] = useState(false);
+  const [cards, setCards] = useState<Card[]>(seedCards);
+
+  function handleExtracted(tasks: ExtractedTaskOut[]) {
+    if (!tasks.length) return;
+    const seq = Date.now() % 10_000;
+    const fresh: Card[] = tasks.map((t, i) => ({
+      id: `T-${1100 + seq + i}`,
+      title: t.title,
+      assignee: "you",
+      priority: (VALID_PRIORITY.has(t.priority as Priority) ? t.priority : "medium") as Priority,
+      status: "todo",
+    }));
+    setCards((prev) => [...fresh, ...prev]);
+  }
 
   return (
     <WorkspaceShell onMic={() => setOverlay(true)}>
       <section aria-label="dashboard" className="grid grid-cols-12 gap-6 p-6">
         <div className="col-span-12 lg:col-span-8 space-y-6">
           <Ticker entries={seedTicker} />
-          <KanbanBoard initialCards={seedCards} />
+          <KanbanBoard cards={cards} setCards={setCards} />
         </div>
         <aside className="col-span-12 lg:col-span-4 space-y-6">
           <BlockerGraph nodes={seedNodes} links={seedLinks} />
@@ -54,7 +70,9 @@ export default function WorkspaceHome() {
         </aside>
       </section>
       <MicOrb onClick={() => setOverlay(true)} />
-      {overlay && <StandupOverlay onClose={() => setOverlay(false)} />}
+      {overlay && (
+        <StandupOverlay onClose={() => setOverlay(false)} onExtracted={handleExtracted} />
+      )}
     </WorkspaceShell>
   );
 }

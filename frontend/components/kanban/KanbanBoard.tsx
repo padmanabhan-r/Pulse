@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import {
   DndContext,
   PointerSensor,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -29,18 +29,32 @@ const COLUMNS: { id: Status; label: string; code: string }[] = [
   { id: "done", label: "Done", code: "04" },
 ];
 
-export function KanbanBoard({ initialCards }: { initialCards: Card[] }) {
-  const [cards, setCards] = useState(initialCards);
+export function KanbanBoard({
+  cards,
+  setCards,
+}: {
+  cards: Card[];
+  setCards: React.Dispatch<React.SetStateAction<Card[]>>;
+}) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over) return;
     const overId = String(over.id);
-    const target = COLUMNS.find((c) => c.id === overId);
-    if (!target) return;
+    const activeId = String(active.id);
+
+    // overId is either a column id or a card id (when dropped on another card)
+    let targetStatus: Status | null =
+      (COLUMNS.find((c) => c.id === overId)?.id as Status | undefined) ?? null;
+    if (!targetStatus) {
+      const overCard = cards.find((c) => c.id === overId);
+      if (overCard) targetStatus = overCard.status;
+    }
+    if (!targetStatus) return;
+
     setCards((prev) =>
-      prev.map((c) => (c.id === active.id ? { ...c, status: target.id } : c)),
+      prev.map((c) => (c.id === activeId ? { ...c, status: targetStatus! } : c)),
     );
   }
 
@@ -70,10 +84,14 @@ export function KanbanBoard({ initialCards }: { initialCards: Card[] }) {
 }
 
 function Column({ col, cards }: { col: { id: Status; label: string; code: string }; cards: Card[] }) {
+  const { setNodeRef, isOver } = useDroppable({ id: col.id });
   return (
     <div
+      ref={setNodeRef}
       data-droppable={col.id}
-      className="min-h-48 px-5 py-4"
+      className={`min-h-48 px-5 py-4 transition-colors ${
+        isOver ? "bg-(--color-signal-dim)" : ""
+      }`}
       id={col.id}
     >
       <div className="mb-3 flex items-baseline justify-between">
