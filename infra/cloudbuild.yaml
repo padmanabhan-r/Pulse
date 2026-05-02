@@ -1,0 +1,114 @@
+# Cloud Build pipeline. Triggered on push to `main`.
+# Required substitutions:
+#   _REGION       = us-central1
+#   _SERVICE      = pulse-api
+#   _AR_REPO      = pulse
+#   _FB_PROJECT   = <firebase-project-id>
+
+substitutions:
+  _REGION: us-central1
+  _SERVICE: pulse-api
+  _AR_REPO: pulse
+  _FB_PROJECT: pulse-prod
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+steps:
+  # 1. Backend tests
+  - id: backend-test
+    name: ghcr.io/astral-sh/uv:0.5.4
+    dir: backend
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        uv sync
+        uv run ruff check .
+        uv run ruff format --check .
+        uv run mypy app
+        uv run pytest -m "not integration"
+
+  # 2. Frontend test + build
+  - id: frontend-build
+    name: node:22-alpine
+    dir: frontend
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        corepack enable
+        pnpm install --frozen-lockfile
+        pnpm lint
+        pnpm typecheck
+        pnpm test:unit -- --run
+        pnpm build
+
+  # 3. Build + push backend image
+  - id: backend-image
+    name: gcr.io/cloud-builders/docker
+    dir: backend
+    args:
+      [
+        'build',
+        '-t',
+        '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA',
+        '.',
+      ]
+  - id: backend-push
+    name: gcr.io/cloud-builders/docker
+    args:
+      [
+        'push',
+        '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA',
+      ]
+
+  # 4. Deploy backend to Cloud Run
+  - id: backend-deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --concurrency=80
+      - --cpu=1
+      - --memory=512Mi
+      - --min-instances=0
+      - --max-instances=10
+      - --cpu-boost
+      - --service-account=pulse-api-runtime@$PROJECT_ID.iam.gserviceaccount.com
+      - --set-env-vars=ENV=prod,GCP_PROJECT=$PROJECT_ID,FIREBASE_PROJECT_ID=${_FB_PROJECT}
+      - --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,SLACK_SIGNING_SECRET=slack-signing-secret:latest,SLACK_BOT_TOKEN=slack-bot-token:latest
+
+  # 5. Deploy frontend (Firebase Hosting + Firestore rules + indexes)
+  - id: frontend-deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    dir: .
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        apt-get update && apt-get install -y --no-install-recommends curl
+        curl -sL https://firebase.tools | bash
+        firebase deploy --project=${_FB_PROJECT} --only=hosting,firestore --non-interactive
+
+  # 6. Smoke test
+  - id: smoke
+    name: curlimages/curl:8.10.1
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        URL=$(gcloud run services describe ${_SERVICE} --region=${_REGION} --format='value(status.url)')
+        curl -fsS "$URL/health"
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
+
+timeout: 1800s

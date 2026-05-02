@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+venv/
+.venv/
+env/
+.env
+.env.*
+!.env.example
+
+# pytest / mypy / ruff
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.*/
+.DS_Store
+
+# Node / Next.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+frontend/.next/
+frontend/out/
+*.tsbuildinfo
+.turbo/
+.vercel/
+
+# Build / test artefacts
+playwright-report/
+test-results/
+blob-report/
+
+# Database
+*.sqlite3
+*.db
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Secrets
+*.pem
+*.key
+credentials.json
+service-account*.json
+firebase-admin*.json
+misc/
+
+# Root markdown allowlist (everything else lives under sub-projects)
+/*.md
+!README.md
+!DEMO.md
+!CHANGELOG.md
+
+# Reference material (large, local-only)
+sample/
+docs/
+
+# Local logs
+.tmp/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*.log

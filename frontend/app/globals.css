@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+/* ────────────────────────────────────────────────────────────
+   Pulse — Editorial Trading Terminal
+   Three-typeface diet: Fraunces (display) / General Sans (body) / JetBrains Mono (data)
+   Single accent (electric lime). Coral reserved for blockers.
+   ──────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("https://fonts.gstatic.com/s/fraunces/v32/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  font-stretch: 100%;
+}
+@font-face {
+  font-family: "Fraunces";
+  src: url("https://fonts.gstatic.com/s/fraunces/v32/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "General Sans";
+  src: url("https://api.fontshare.com/v2/css?f[]=general-sans@200,300,400,500,600,700&display=swap") format("css");
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("https://fonts.gstatic.com/s/jetbrainsmono/v20/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+@theme {
+  /* Surfaces */
+  --color-ink: #0a0b0d;
+  --color-ink-2: #111316;
+  --color-ink-3: #181a1e;
+  --color-paper: #f2efe9;
+  --color-paper-2: #e8e3d8;
+
+  /* Accents */
+  --color-signal: #c9ff3e;          /* electric lime — heartbeat */
+  --color-signal-dim: rgba(201, 255, 62, 0.12);
+  --color-alert: #ff5c4d;           /* hot coral — blockers only */
+  --color-alert-dim: rgba(255, 92, 77, 0.14);
+
+  /* Type tokens */
+  --color-prose: #f2efe9;
+  --color-prose-mute: rgba(242, 239, 233, 0.62);
+  --color-rule: rgba(242, 239, 233, 0.08);
+  --color-rule-signal: rgba(201, 255, 62, 0.22);
+
+  /* Fonts */
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-body: "General Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Radii / motion */
+  --radius-1: 2px;
+  --radius-2: 6px;
+  --radius-pill: 999px;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  color-scheme: dark;
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.94  0 0 0 0 0.91  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+@media (prefers-color-scheme: light) {
+  :root { color-scheme: light; }
+}
+
+html, body { background: var(--color-ink); color: var(--color-prose); }
+
+body {
+  font-family: var(--font-body);
+  font-feature-settings: "ss01", "cv11", "cv02";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.005em;
+  background-image: var(--grain);
+  background-attachment: fixed;
+  background-size: 160px 160px;
+}
+
+/* Three-typeface law (utility) */
+.font-display { font-family: var(--font-display); font-feature-settings: "ss01"; letter-spacing: -0.018em; }
+.font-mono    { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: 0; }
+.font-voice   { font-family: var(--font-display); font-style: italic; font-weight: 350; }
+
+/* Hairline rule */
+.rule          { height: 1px; background: var(--color-rule); }
+.rule-signal   { height: 1px; background: var(--color-rule-signal); }
+
+/* Focus ring (a11y) */
+*:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Selection */
+::selection { background: var(--color-signal); color: var(--color-ink); }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* Skip-to-content */
+.skip-link {
+  position: absolute; left: -9999px;
+  background: var(--color-signal); color: var(--color-ink);
+  padding: 8px 12px; font-family: var(--font-mono); font-size: 12px;
+}
+.skip-link:focus { left: 16px; top: 16px; z-index: 100; }
+
+/* Mic orb breathing */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(201, 255, 62, 0.55); }
+  50%      { transform: scale(1.04); box-shadow: 0 0 0 24px rgba(201, 255, 62, 0); }
+}
+.orb-breathe { animation: breathe 1.6s var(--ease-out-expo) infinite; }
+
+/* Ticker scroll */
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Custom cursor (hero only — opt-in via .cursor-signal) */
+.cursor-signal { cursor: none; }
+.cursor-signal::after {
+  content: ""; pointer-events: none; position: fixed;
+  width: 6px; height: 6px; border-radius: 999px; background: var(--color-signal);
+  top: var(--cy, -100px); left: var(--cx, -100px);
+  transform: translate(-50%, -50%);
+  mix-blend-mode: difference;
+  transition: top 30ms linear, left 30ms linear;
+}

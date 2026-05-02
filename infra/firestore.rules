@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isMember(wsId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/workspaces/$(wsId)/members/$(request.auth.uid));
+    }
+
+    function memberRole(wsId) {
+      return get(/databases/$(database)/documents/workspaces/$(wsId)/members/$(request.auth.uid)).data.role;
+    }
+
+    function isOwnerOrAdmin(wsId) {
+      return isMember(wsId) && memberRole(wsId) in ['owner', 'admin'];
+    }
+
+    // Workspaces: any signed-in user can create. Read/update only members.
+    match /workspaces/{wsId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.owner_uid == request.auth.uid;
+      allow read: if isMember(wsId);
+      allow update: if isOwnerOrAdmin(wsId);
+      allow delete: if isMember(wsId) && memberRole(wsId) == 'owner';
+
+      match /members/{memberUid} {
+        allow read: if isMember(wsId);
+        // Self-add on workspace create flow handled by backend; client can self-update profile.
+        allow create: if request.auth.uid == memberUid || isOwnerOrAdmin(wsId);
+        allow update: if request.auth.uid == memberUid || isOwnerOrAdmin(wsId);
+        allow delete: if isOwnerOrAdmin(wsId);
+      }
+
+      match /tasks/{taskId} {
+        allow read: if isMember(wsId);
+        allow create, update: if isMember(wsId);
+        allow delete: if isOwnerOrAdmin(wsId);
+      }
+
+      match /blockers/{blockerId} {
+        allow read: if isMember(wsId);
+        allow create, update: if isMember(wsId);
+        allow delete: if isOwnerOrAdmin(wsId);
+      }
+
+      match /integrations/{integrationId} {
+        // Sensitive (Slack webhook URLs, tokens). Owner/admin only.
+        allow read, write: if isOwnerOrAdmin(wsId);
+      }
+
+      match /events/{eventId} {
+        // Activity feed (system-written). Members read-only.
+        allow read: if isMember(wsId);
+        allow write: if false;
+      }
+    }
+  }
+}

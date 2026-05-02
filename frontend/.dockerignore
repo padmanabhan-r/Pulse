@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.turbo
+.vercel
+playwright-report
+test-results
+coverage
+.env.local
+.env.development
+*.log
+README.md
